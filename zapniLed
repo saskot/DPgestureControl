@@ -1,126 +1,267 @@
-import cv2
+import os, cv2, time, joblib, asyncio, threading, warnings, platform
+import pandas as pd
 import mediapipe as mp
-import requests
-import time
+from colorama import Fore, Style
+from bleak import BleakClient, BleakError, BleakScanner
 
-# ⚙️ IP adresa ESP32
-ESP_IP = "http://192.168.100.117"  # <- zmeň podľa tvojej ESP32 IP adresy
+# ===== BLE / NUS =====
+ESP32_BLE_NAME    = "ESP32_Gesture"                       # názov z ESP32
+ESP32_BLE_ADDRESS = "34:94:54:F0:45:7A"                   # fallback MAC
+NUS_SERVICE_UUID  = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+NUS_RX_UUID_FALLBACK = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  # ak autodetekcia zlyhá, použijeme toto
 
+# ===== Gestá -> príkazy =====
+HOLD_MS          = 3000   # drž gesto 3 sekundy
+GESTURE_TO_CMD   = {"peace": "blinkslow", "fist": "blinkfast"}
+
+# ===== Logovanie / vizuál =====
+LOG_THROTTLE_MS  = 1000
+FRAME_SLEEP_S    = 0.02
+CONF_THRESHOLD   = 80.0    # minimum pre uznanie gesta
+COUNTDOWN_TEXT   = True     # zobraz odpočítavanie
+
+# ===== Model =====
+warnings.filterwarnings("ignore", category=UserWarning, module='google.protobuf')
+MODEL_FILE = "gesture_model_with_features.pkl"
+if not os.path.exists(MODEL_FILE):
+    raise FileNotFoundError(f"{MODEL_FILE} neexistuje. Najprv spusti train_model.py a ulož model.")
+payload = joblib.load(MODEL_FILE)
+model = payload["model"]; feature_names = payload["features"]
+if len(feature_names) != 63: raise ValueError("Očakávam 63 features (21*x,y,z).")
+
+# ===== MediaPipe =====
 mp_hands = mp.solutions.hands
-mp_draw = mp.solutions.drawing_utils
+mp_draw  = mp.solutions.drawing_utils
 
-cap = cv2.VideoCapture(0)
+# ---------- Pomocné ----------
+class RateLogger:
+    def __init__(self, throttle_ms=1000):
+        self.t=throttle_ms; self._last=None; self._ts=0
+    def log(self, label, conf):
+        now=int(time.time()*1000); ch=(label!=self._last); due=(now-self._ts)>=self.t
+        if ch or due:
+            color=Fore.GREEN if conf>80 else (Fore.YELLOW if conf>50 else Fore.RED)
+            print(f"{color}➡ Gesto: {label} ({conf:.2f} %){Style.RESET_ALL}")
+            self._last=label; self._ts=now
 
-# Pomocné funkcie
-def finger_up(hand_landmarks, tip_id, dip_id, h, w):
-    tip_y = int(hand_landmarks.landmark[tip_id].y * h)
-    dip_y = int(hand_landmarks.landmark[dip_id].y * h)
-    return tip_y < dip_y
+class HoldDetector:
+    """Držanie rovnakého (valídneho) gesta po HOLD_MS → True práve v okamihu dosiahnutia."""
+    def __init__(self, hold_ms):
+        self.hold_ms = hold_ms
+        self._label = None
+        self._since = 0
+        self._fired_for = None  # aby neposielalo znova kým sa label nezmení
+    def update(self, label):
+        now=int(time.time()*1000)
+        if label!=self._label:
+            self._label = label
+            self._since = now
+            self._fired_for = None
+            return False, 0
+        elapsed = now - self._since
+        ready = (self._label not in (None,"Unknown")) and elapsed >= self.hold_ms and self._fired_for!=self._label
+        if ready:
+            self._fired_for = self._label
+        return ready, max(0, self.hold_ms - elapsed)
 
-def thumb_up_down(hand_landmarks, h, w):
-    tip_x = int(hand_landmarks.landmark[4].x * w)
-    mcp_x = int(hand_landmarks.landmark[2].x * w)
-    return tip_x < mcp_x
+# ---------- BLE jednoduchý manager (event loop vo vlákne) ----------
+class BLEManager:
+    def __init__(self, target_name, fallback_addr, nus_service_uuid, rx_uuid_fallback):
+        self.target_name = target_name
+        self.fallback_addr = fallback_addr
+        self.nus_service_uuid = nus_service_uuid.lower()
+        self.rx_uuid_fallback = rx_uuid_fallback
+        self.client: BleakClient | None = None
+        self.loop: asyncio.AbstractEventLoop | None = None
+        self.thread: threading.Thread | None = None
+        self.connected = False
+        self.char_uuid_write = None  # autodetekcia
+        self._start_event = threading.Event()
 
-# Časovanie gesta
-last_gesture = None
-gesture_start = 0
-triggered = False
+    # --- verejné API ---
+    def start(self):
+        self.thread = threading.Thread(target=self._run_loop, daemon=True)
+        self.thread.start()
+        self._start_event.wait(timeout=10)
 
-with mp_hands.Hands(
-    max_num_hands=1,
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.7
-) as hands:
+    def stop(self):
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(self._disconnect(), self.loop).result(timeout=3)
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        if self.thread:
+            self.thread.join(timeout=3)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    def send(self, text: str):
+        if not self.connected or not self.char_uuid_write:
+            return
+        data = text.encode()
+        fut = asyncio.run_coroutine_threadsafe(self._write(data), self.loop)
+        try:
+            fut.result(timeout=2)
+        except Exception as e:
+            print(f"⚠️ BLE write chyba: {e}")
 
-        frame = cv2.flip(frame, 1)
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result = hands.process(rgb)
+    # --- interné ---
+    def _run_loop(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        if platform.system()=="Windows":
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        self.loop.create_task(self._connect_and_discover())
+        self._start_event.set()
+        self.loop.run_forever()
+        # cleanup
+        try:
+            self.loop.close()
+        except Exception:
+            pass
 
-        gesture = "No Hand"
-        h, w, c = frame.shape
+    async def _connect_and_discover(self):
+        # scan podľa názvu; fallback MAC
+        target = None
+        try:
+            print("🔍 BLE: skenujem zariadenia...")
+            dev = await BleakScanner.find_device_by_filter(
+                lambda d, ad: (d.name or "").strip()==self.target_name, timeout=5.0
+            )
+            if dev:
+                target = dev.address
+                print(f"✅ Našiel som {self.target_name} na adrese {target}")
+            else:
+                target = self.fallback_addr
+                print(f"ℹ️ Nenašiel som {self.target_name}, skúšam fallback: {target}")
+        except Exception as e:
+            print(f"⚠️ Scan zlyhal: {e}. Skúšam priamo {self.fallback_addr}")
+            target = self.fallback_addr
 
-        if result.multi_hand_landmarks:
-            for hand_landmarks in result.multi_hand_landmarks:
-                mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        self.client = BleakClient(target, timeout=10.0)
+        try:
+            await self.client.connect()
+        except Exception as e:
+            print(f"❌ BLE connect zlyhal: {e}")
+            return
 
-                fingers = []
-                fingers.append(finger_up(hand_landmarks, 8, 6, h, w))   # ukazovák
-                fingers.append(finger_up(hand_landmarks, 12, 10, h, w)) # prostredník
-                fingers.append(finger_up(hand_landmarks, 16, 14, h, w)) # prstenník
-                fingers.append(finger_up(hand_landmarks, 20, 18, h, w)) # malíček
+        self.connected = self.client.is_connected
+        print("✅ BLE: pripojené k ESP32" if self.connected else "❌ BLE: nepripojené")
+        if not self.connected:
+            return
 
-                thumb_up = thumb_up_down(hand_landmarks, h, w)
-
-                if sum(fingers) == 0 and not thumb_up:
-                    gesture = "Fist"
-                elif sum(fingers) == 4 and thumb_up:
-                    gesture = "Open Palm"
-                elif fingers[0] and not any(fingers[1:]):
-                    gesture = "Index Up"
-                elif thumb_up and sum(fingers) == 0:
-                    gesture = "Thumb Up"
+        # ---- vypíš všetky služby/charakteristiky (ako si chcel "vypísi všetky") ----
+        try:
+            svcs = self.client.services  # na Windows/bleak sa naplní po connecte
+            if svcs is None:
+                # jemný wait – niekedy treba chvíľu
+                for _ in range(10):
+                    await asyncio.sleep(0.1)
+                    if self.client.services: 
+                        svcs = self.client.services
+                        break
+            if svcs:
+                print("📋 GATT prehľad:")
+                for s in svcs:
+                    print(f"  • Service {s.uuid}")
+                    for c in s.characteristics:
+                        props = ",".join(c.properties)
+                        print(f"      - Char {c.uuid}  [{props}]")
+                        # autodetekcia NUS RX
+                        if s.uuid.lower()==self.nus_service_uuid and ("write" in c.properties or "write-without-response" in c.properties):
+                            self.char_uuid_write = c.uuid
+                if not self.char_uuid_write:
+                    # fallback
+                    self.char_uuid_write = self.rx_uuid_fallback
+                    print(f"ℹ️ NUS RX nenašiel som v GATT, použijem fallback: {self.char_uuid_write}")
                 else:
-                    gesture = "Other"
+                    print(f"✅ NUS RX zistený: {self.char_uuid_write}")
+            else:
+                print("⚠️ Neviem načítať services; použijem fallback RX UUID.")
+                self.char_uuid_write = self.rx_uuid_fallback
+        except Exception as e:
+            print(f"⚠️ Výpis služieb zlyhal: {e} – použijem fallback RX UUID.")
+            self.char_uuid_write = self.rx_uuid_fallback
 
-        # Výpočet trvania gesta
-        current_time = time.time()
-        if gesture == last_gesture:
-            duration = current_time - gesture_start
-        else:
-            gesture_start = current_time
-            duration = 0
-            triggered = False
+    async def _disconnect(self):
+        try:
+            if self.client:
+                await self.client.disconnect()
+        except Exception:
+            pass
+        self.connected=False
 
-        last_gesture = gesture
+    async def _write(self, data: bytes):
+        if not (self.client and self.connected and self.char_uuid_write):
+            raise BleakError("Nie som pripojený alebo nemám RX characteristic.")
+        # krátka ochrana – niektoré stacky nechcú spam
+        await self.client.write_gatt_char(self.char_uuid_write, data)
 
-        # Odpočítavanie
-        countdown = max(0, 3 - int(duration))
-        if gesture != "No Hand" and gesture != "Other":
-            text = f"{gesture} ({duration:.1f}s)"
-        else:
-            text = gesture
+# ---------- Hlavný program ----------
+def main():
+    if platform.system()=="Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-        # Zobrazenie textu
-        cv2.putText(frame, text, (50, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    cap=cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("❌ Kamera sa nepodarilo otvoriť!"); return
 
-        # Vizualizácia odpočítavania (progress bar)
-        if duration > 0 and not triggered:
-            bar_length = int((duration / 3) * 300)
-            cv2.rectangle(frame, (50, 90), (350, 120), (50, 50, 50), -1)
-            cv2.rectangle(frame, (50, 90), (50 + bar_length, 120), (0, 255, 0), -1)
-            cv2.putText(frame, f"{countdown}s", (370, 115),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+    # BLE manager
+    ble = BLEManager(ESP32_BLE_NAME, ESP32_BLE_ADDRESS, NUS_SERVICE_UUID, NUS_RX_UUID_FALLBACK)
+    ble.start()
 
-        # --- Ak trvá gesto viac ako 3s ---
-        if duration > 3 and not triggered:
-            try:
-                if gesture == "Fist":
-                    requests.get(f"{ESP_IP}/led/blinkslow", timeout=1)
-                    print("💡 LED bliká pomaly")
-                elif gesture == "Index Up":
-                    requests.get(f"{ESP_IP}/led/blinkfast", timeout=1)
-                    print("💡 LED bliká rýchlo")
-                elif gesture == "Open Palm":
-                    requests.get(f"{ESP_IP}/led/off", timeout=1)
-                    print("💤 LED zhasla")
-                elif gesture == "Thumb Up":
-                    requests.get(f"{ESP_IP}/led/on", timeout=1)
-                    print("✅ LED zapnutá")
+    logger = RateLogger(LOG_THROTTLE_MS)
+    hold   = HoldDetector(HOLD_MS)
+    last_overlay=""
 
-                triggered = True
-            except:
-                print("⚠️  ESP32 sa neozýva")
+    with mp_hands.Hands(max_num_hands=1,min_detection_confidence=0.7,min_tracking_confidence=0.7) as hands:
+        try:
+            while True:
+                ok,frame=cap.read()
+                if not ok: print("❌ Chyba pri čítaní rámu z kamery"); break
 
-        cv2.imshow("Hand Gesture Control", frame)
+                rgb=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                result=hands.process(rgb)
 
-        if cv2.waitKey(1) & 0xFF == 27:  # ESC
-            break
+                label="Unknown"; conf=0.0
+                if result.multi_hand_landmarks:
+                    for hl in result.multi_hand_landmarks:
+                        mp_draw.draw_landmarks(frame, hl, mp_hands.HAND_CONNECTIONS)
+                        vals=[]; [vals.extend([lm.x,lm.y,lm.z]) for lm in hl.landmark]
+                        try:
+                            df=pd.DataFrame([vals], columns=feature_names)
+                            probs=model.predict_proba(df)[0]; idx=probs.argmax()
+                            pred=model.classes_[idx]; conf=float(probs[idx]*100.0)
+                            label = pred if conf>=CONF_THRESHOLD else "Unknown"
+                        except Exception as e:
+                            label="Error"; last_overlay=f"Predikcia error: {e}"
 
-cap.release()
-cv2.destroyAllWindows()
+                # 3-sekundové držanie gesta → pošli príkaz
+                fired, remaining = hold.update(label)
+                if fired:
+                    cmd = GESTURE_TO_CMD.get(label)
+                    if cmd and ble.connected:
+                        ble.send(cmd)
+                        last_overlay = f"📡 Sent: {cmd}"
+                        print(f"📤 Poslal som: {cmd}")
+                else:
+                    # zobraz odpočítavanie
+                    if COUNTDOWN_TEXT and label in GESTURE_TO_CMD and remaining>0:
+                        last_overlay = f"⏳ {label} … {int((remaining+999)/1000)}s"
+                    elif label=="Unknown":
+                        last_overlay = "No Hand" if conf<1 else f"Unknown ({conf:.1f}%)"
+
+                # log a overlay
+                logger.log(label, conf)
+                cv2.putText(frame, f"{label} ({conf:.1f}%)", (20,40), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                            (0,255,0) if conf>80 else (0,255,255) if conf>50 else (0,0,255), 2)
+                if last_overlay:
+                    cv2.putText(frame, last_overlay, (20,75), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
+                cv2.circle(frame, (20,110), 8, (0,200,0) if ble.connected else (0,0,200), -1)
+                cv2.putText(frame, "BLE", (35,116), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                            (0,200,0) if ble.connected else (0,0,200), 2)
+
+                cv2.imshow("Gesture -> BLE (3s hold)", frame)
+                time.sleep(FRAME_SLEEP_S)
+                if (cv2.waitKey(1) & 0xFF) == 27: break
+        finally:
+            cap.release(); cv2.destroyAllWindows(); ble.stop()
+
+if __name__=="__main__":
+    main()

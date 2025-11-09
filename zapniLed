@@ -1,0 +1,126 @@
+import cv2
+import mediapipe as mp
+import requests
+import time
+
+# ⚙️ IP adresa ESP32
+ESP_IP = "http://192.168.100.117"  # <- zmeň podľa tvojej ESP32 IP adresy
+
+mp_hands = mp.solutions.hands
+mp_draw = mp.solutions.drawing_utils
+
+cap = cv2.VideoCapture(0)
+
+# Pomocné funkcie
+def finger_up(hand_landmarks, tip_id, dip_id, h, w):
+    tip_y = int(hand_landmarks.landmark[tip_id].y * h)
+    dip_y = int(hand_landmarks.landmark[dip_id].y * h)
+    return tip_y < dip_y
+
+def thumb_up_down(hand_landmarks, h, w):
+    tip_x = int(hand_landmarks.landmark[4].x * w)
+    mcp_x = int(hand_landmarks.landmark[2].x * w)
+    return tip_x < mcp_x
+
+# Časovanie gesta
+last_gesture = None
+gesture_start = 0
+triggered = False
+
+with mp_hands.Hands(
+    max_num_hands=1,
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.7
+) as hands:
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        frame = cv2.flip(frame, 1)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = hands.process(rgb)
+
+        gesture = "No Hand"
+        h, w, c = frame.shape
+
+        if result.multi_hand_landmarks:
+            for hand_landmarks in result.multi_hand_landmarks:
+                mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+                fingers = []
+                fingers.append(finger_up(hand_landmarks, 8, 6, h, w))   # ukazovák
+                fingers.append(finger_up(hand_landmarks, 12, 10, h, w)) # prostredník
+                fingers.append(finger_up(hand_landmarks, 16, 14, h, w)) # prstenník
+                fingers.append(finger_up(hand_landmarks, 20, 18, h, w)) # malíček
+
+                thumb_up = thumb_up_down(hand_landmarks, h, w)
+
+                if sum(fingers) == 0 and not thumb_up:
+                    gesture = "Fist"
+                elif sum(fingers) == 4 and thumb_up:
+                    gesture = "Open Palm"
+                elif fingers[0] and not any(fingers[1:]):
+                    gesture = "Index Up"
+                elif thumb_up and sum(fingers) == 0:
+                    gesture = "Thumb Up"
+                else:
+                    gesture = "Other"
+
+        # Výpočet trvania gesta
+        current_time = time.time()
+        if gesture == last_gesture:
+            duration = current_time - gesture_start
+        else:
+            gesture_start = current_time
+            duration = 0
+            triggered = False
+
+        last_gesture = gesture
+
+        # Odpočítavanie
+        countdown = max(0, 3 - int(duration))
+        if gesture != "No Hand" and gesture != "Other":
+            text = f"{gesture} ({duration:.1f}s)"
+        else:
+            text = gesture
+
+        # Zobrazenie textu
+        cv2.putText(frame, text, (50, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        # Vizualizácia odpočítavania (progress bar)
+        if duration > 0 and not triggered:
+            bar_length = int((duration / 3) * 300)
+            cv2.rectangle(frame, (50, 90), (350, 120), (50, 50, 50), -1)
+            cv2.rectangle(frame, (50, 90), (50 + bar_length, 120), (0, 255, 0), -1)
+            cv2.putText(frame, f"{countdown}s", (370, 115),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+        # --- Ak trvá gesto viac ako 3s ---
+        if duration > 3 and not triggered:
+            try:
+                if gesture == "Fist":
+                    requests.get(f"{ESP_IP}/led/blinkslow", timeout=1)
+                    print("💡 LED bliká pomaly")
+                elif gesture == "Index Up":
+                    requests.get(f"{ESP_IP}/led/blinkfast", timeout=1)
+                    print("💡 LED bliká rýchlo")
+                elif gesture == "Open Palm":
+                    requests.get(f"{ESP_IP}/led/off", timeout=1)
+                    print("💤 LED zhasla")
+                elif gesture == "Thumb Up":
+                    requests.get(f"{ESP_IP}/led/on", timeout=1)
+                    print("✅ LED zapnutá")
+
+                triggered = True
+            except:
+                print("⚠️  ESP32 sa neozýva")
+
+        cv2.imshow("Hand Gesture Control", frame)
+
+        if cv2.waitKey(1) & 0xFF == 27:  # ESC
+            break
+
+cap.release()
+cv2.destroyAllWindows()

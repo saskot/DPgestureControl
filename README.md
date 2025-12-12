@@ -52,27 +52,46 @@ Architecture overview:
 ## Project Structure
 
 project_root/
+
 │
 ├── data/
-│   └── data.csv                # Collected landmark dataset
+
+│   └── data.csv   
+
+
 │
 ├── models/
-│   ├── gesture_cnn.h5          # Trained CNN model
-│   └── gesture_cnn_labels.pkl  # Class label mapping
+
+│   ├── gesture_cnn.h5  
+# Trained CNN model
+│   └── gesture_cnn_labels.pkl
+# Class label mapping
 │
 ├── reports/
-│   ├── confusion_matrix.png    # Normalized confusion matrix
-│   ├── training_curves.png     # Accuracy and loss curves
+
+│   ├── confusion_matrix.png 
+# Normalized confusion matrix
+│   ├── training_curves.png  
+# Accuracy and loss curves
 │   └── classification_report.txt
+
 │
 ├── src/
-│   ├── collect_guided_cnn.py   # Guided dataset collection
-│   ├── train_cnn.py            # Model training
-│   ├── evaluate_cnn.py         # Model evaluation
-│   └── realtime_cnn.py         # Real-time gesture recognition
+
+│   ├── collect_guided_cnn.py
+# Guided dataset collection
+│   ├── train_cnn.py     
+# Model training
+│   ├── evaluate_cnn.py     
+# Model evaluation
+│   └── realtime_cnn.py     
+# Real-time gesture recognition
 │
+
 ├── README.md
+
 └── requirements.txt
+
 
 ---
 

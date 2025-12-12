@@ -26,15 +26,6 @@ TRAINING_CURVES_FIG   = os.path.join(REPORTS_DIR, "training_curves.png")
 CONFUSION_MATRIX_FIG  = os.path.join(REPORTS_DIR, "confusion_matrix.png")
 CLASS_REPORT_TXT      = os.path.join(REPORTS_DIR, "classification_report.txt")
 
-# ===== NASTAVENIA =====
-FILENAME = "data.csv"
-MODEL_FILE = "gesture_cnn.h5"
-LABELS_FILE = "gesture_cnn_labels.pkl"
-
-TRAINING_CURVES_FIG = "training_curves.png"
-CONFUSION_MATRIX_FIG = "confusion_matrix.png"
-CLASS_REPORT_TXT = "classification_report.txt"
-
 np.random.seed(42)
 tf.random.set_seed(42)
 

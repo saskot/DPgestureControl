@@ -11,28 +11,28 @@ SAMPLES_PER_GESTURE = 80          # number of samples per gesture
 # LIST OF GESTURES (LABEL, HAND, DESCRIPTION)
 GESTURES = [
     # LEFT HAND
-    {"label": "FIST_L",     "hand": "Left",  "desc": "LEFT - Fist"},
-    {"label": "OPEN_L",     "hand": "Left",  "desc": "LEFT - Open hand"},
-    {"label": "PEACE_L",    "hand": "Left",  "desc": "LEFT - Peace V"},
-    {"label": "OK_L",       "hand": "Left",  "desc": "LEFT - OK sign"},
-    {"label": "POINT_L",    "hand": "Left",  "desc": "LEFT - Point finger"},
-    {"label": "MIDDLE_L",   "hand": "Left",  "desc": "LEFT - Middle finger"},
+    # {"label": "FIST_L",     "hand": "Left",  "desc": "LEFT - Fist"},
+    # {"label": "OPEN_L",     "hand": "Left",  "desc": "LEFT - Open hand"},
+    # {"label": "PEACE_L",    "hand": "Left",  "desc": "LEFT - Peace V"},
+    # {"label": "OK_L",       "hand": "Left",  "desc": "LEFT - OK sign"},
+    # {"label": "POINT_L",    "hand": "Left",  "desc": "LEFT - Point finger"},
+    # {"label": "MIDDLE_L",   "hand": "Left",  "desc": "LEFT - Middle finger"},
 
-    # RIGHT HAND
-    {"label": "FIST_R",     "hand": "Right", "desc": "RIGHT - Fist"},
-    {"label": "OPEN_R",     "hand": "Right", "desc": "RIGHT - Open hand"},
-    {"label": "PEACE_R",    "hand": "Right", "desc": "RIGHT - Peace V"},
-    {"label": "OK_R",       "hand": "Right", "desc": "RIGHT - OK sign"},
-    {"label": "POINT_R",    "hand": "Right", "desc": "RIGHT - Point finger"},
-    {"label": "MIDDLE_R",   "hand": "Right", "desc": "RIGHT - Middle finger"},
+    # # RIGHT HAND
+    # {"label": "FIST_R",     "hand": "Right", "desc": "RIGHT - Fist"},
+    # {"label": "OPEN_R",     "hand": "Right", "desc": "RIGHT - Open hand"},
+    # {"label": "PEACE_R",    "hand": "Right", "desc": "RIGHT - Peace V"},
+    # {"label": "OK_R",       "hand": "Right", "desc": "RIGHT - OK sign"},
+    # {"label": "POINT_R",    "hand": "Right", "desc": "RIGHT - Point finger"},
+    # {"label": "MIDDLE_R",   "hand": "Right", "desc": "RIGHT - Middle finger"},
 
-    # LIKE / DISLIKE LEFT HAND
-    {"label": "LIKE_L",     "hand": "Left",  "desc": "LEFT - Like (thumb up)"},
-    {"label": "DISLIKE_L",  "hand": "Left",  "desc": "LEFT - Dislike (thumb down)"},
+    # # LIKE / DISLIKE LEFT HAND
+    # {"label": "LIKE_L",     "hand": "Left",  "desc": "LEFT - Like (thumb up)"},
+    # {"label": "DISLIKE_L",  "hand": "Left",  "desc": "LEFT - Dislike (thumb down)"},
 
-    # LIKE / DISLIKE RIGHT HAND
-    {"label": "LIKE_R",     "hand": "Right", "desc": "RIGHT - Like (thumb up)"},
-    {"label": "DISLIKE_R",  "hand": "Right", "desc": "RIGHT - Dislike (thumb down)"},
+    # # LIKE / DISLIKE RIGHT HAND
+    # {"label": "LIKE_R",     "hand": "Right", "desc": "RIGHT - Like (thumb up)"},
+    # {"label": "DISLIKE_R",  "hand": "Right", "desc": "RIGHT - Dislike (thumb down)"},
 
     # UNKNOWN - ANY RANDOM / WRONG / NO HAND
     {"label": "UNKNOWN",    "hand": "Any",   "desc": "UNKNOWN - random gesture or no hand"},

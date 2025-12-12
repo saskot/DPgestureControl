@@ -1,0 +1,163 @@
+import cv2, mediapipe as mp, numpy as np, pyautogui, time, warnings
+from collections import deque
+warnings.filterwarnings("ignore", category=UserWarning)
+
+mp_hands, mp_draw = mp.solutions.hands, mp.solutions.drawing_utils
+cap = cv2.VideoCapture(0)
+
+positions = deque(maxlen=60)
+
+muted = False
+last_mute_time = 0
+last_volume_time = 0
+
+# tieto môžeš doladiť
+MIN_RADIUS = 20          # ako ďaleko musí byť prst od stredu
+ROTATION_THRESHOLD = 170 # koľko stupňov musíš otočiť, aby sa to rátalo
+MIN_STEP_DEG = 3         # ignoruj úplne malé zmeny
+MAX_STEP_DEG = 45        # ignoruj úplne veľké skoky (chyba sledovania)
+
+rotation_sum = 0.0
+rotation_dir = 0         # 1 = + (doprava), -1 = - (doľava)
+prev_angle = None
+
+def get_finger_states(h):
+    return {t: h.landmark[t].y < h.landmark[t-2].y for t in [8,12,16,20]}
+
+def hand_pose(h):
+    st = get_finger_states(h)
+    up = [k for k,v in st.items() if v]
+    if len(up) == 0:
+        return "fist"
+    elif len(up) >= 3:
+        return "open"
+    elif len(up) == 1 and 8 in up:
+        return "point"
+    else:
+        return None
+
+with mp_hands.Hands(max_num_hands=1,
+                    min_detection_confidence=0.7,
+                    min_tracking_confidence=0.7) as hands:
+    while True:
+        ok, img = cap.read()
+        if not ok:
+            break
+
+        img = cv2.flip(img, 1)
+        h, w, _ = img.shape
+        res = hands.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+        show = ""
+
+        if res.multi_hand_landmarks:
+            hand = res.multi_hand_landmarks[0]
+            mp_draw.draw_landmarks(img, hand, mp_hands.HAND_CONNECTIONS)
+
+            ix = int(hand.landmark[8].x * w)
+            iy = int(hand.landmark[8].y * h)
+            positions.append((ix, iy))
+
+            # vykresli dráhu
+            for i in range(1, len(positions)):
+                cv2.line(
+                    img,
+                    tuple(map(int, positions[i-1])),
+                    tuple(map(int, positions[i])),
+                    (0, 255, 0),
+                    2
+                )
+
+            pose = hand_pose(hand)
+            now = time.time()
+
+            # 1) MUTE / UNMUTE (iba ak sa netočí)
+            # ak práve nie sme v "point", tak môžeme riešiť mute
+            if pose in ("fist", "open"):
+                # reset rotácie, lebo nerobíme gesto
+                rotation_sum = 0
+                rotation_dir = 0
+                prev_angle = None
+
+                if pose == "fist" and not muted and now - last_mute_time > 0.4:
+                    pyautogui.press("volumemute")
+                    muted = True
+                    last_mute_time = now
+                    show = "🔇 MUTE"
+                    print("[GESTURE] MUTE")
+                elif pose == "open" and muted and now - last_mute_time > 0.4:
+                    pyautogui.press("volumemute")
+                    muted = False
+                    last_mute_time = now
+                    show = "🔊 UNMUTE"
+                    print("[GESTURE] UNMUTE")
+
+            # 2) KRUŽENIE – iba pri "point"
+            if pose == "point" and len(positions) > 3:
+                pts = np.array(positions)
+                center = np.mean(pts, axis=0)
+                rel = pts[-1] - center
+                radius = np.linalg.norm(rel)
+
+                # len ak sa prst skutočne hýbe okolo stredu
+                if radius > MIN_RADIUS:
+                    angle = np.degrees(np.arctan2(rel[1], rel[0]))
+
+                    if prev_angle is not None:
+                        # zmena uhla -180..180
+                        diff = (angle - prev_angle + 180) % 360 - 180
+
+                        # odfiltruj úplne malé a úplne veľké kroky
+                        if abs(diff) >= MIN_STEP_DEG and abs(diff) <= MAX_STEP_DEG:
+                            current_dir = 1 if diff > 0 else -1
+
+                            # ak ešte nemáme smer → nastav
+                            if rotation_dir == 0:
+                                rotation_dir = current_dir
+
+                            # ak sa smer zmenil → začni odznova
+                            if current_dir != rotation_dir:
+                                rotation_sum = 0
+                                rotation_dir = current_dir
+
+                            rotation_sum += diff
+
+                            # dosiahli sme prah?
+                            if abs(rotation_sum) >= ROTATION_THRESHOLD and now - last_volume_time > 0.7:
+                                if rotation_sum > 0:
+                                    # POZOR: tu môžeš prehodiť ak chceš
+                                    pyautogui.press("volumeup")
+                                    show = "🔊 Volume UP"
+                                    print("[GESTURE] Volume UP")
+                                else:
+                                    pyautogui.press("volumedown")
+                                    show = "🔉 Volume DOWN"
+                                    print("[GESTURE] Volume DOWN")
+
+                                last_volume_time = now
+                                # reset, aby si mohol spraviť ďalší kruh
+                                rotation_sum = 0
+                                rotation_dir = 0
+
+                    prev_angle = angle
+                else:
+                    # prst je príliš blízko stredu → reset
+                    rotation_sum = 0
+                    rotation_dir = 0
+                    prev_angle = None
+            elif pose != "point":
+                # ak nie sme v pointe, nechceme pokračovať v rotácii
+                rotation_sum = 0
+                rotation_dir = 0
+                prev_angle = None
+
+        if show:
+            cv2.putText(img, show, (30, 80),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+        cv2.imshow("Dynamic Gesture Control", img)
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+
+cap.release()
+cv2.destroyAllWindows()

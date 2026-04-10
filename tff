@@ -1,0 +1,251 @@
+source /home/mdj/RoboChessZED/venv/bin/activate
+/home/mdj/RoboChessZED/venv/bin/python /home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py
+mdj@ubuntu:~/RoboChessZED$ source /home/mdj/RoboChessZED/venv/bin/activate
+(venv) mdj@ubuntu:~/RoboChessZED$ /home/mdj/RoboChessZED/venv/bin/python /home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py
+[2026-04-10 14:56:10 UTC][ZED][INFO] Logging level INFO
+[2026-04-10 14:56:12 UTC][ZED][INFO] [Init]  Camera successfully opened.
+[2026-04-10 14:56:12 UTC][ZED][INFO] [Init]  Camera FW version: 1523
+[2026-04-10 14:56:12 UTC][ZED][INFO] [Init]  Video mode: HD1080@30
+[2026-04-10 14:56:12 UTC][ZED][INFO] [Init]  Serial Number: S/N 26879675
+[2026-04-10 14:56:12 UTC][ZED][INFO] [Init]  Depth mode: NEURAL
+INFO:root:MJPEG preview crop loaded from /home/mdj/RoboChessZED/zed_chess_vision/sqdict.json
+Error in cpuinfo: prctl(PR_SVE_GET_VL) failed
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1775825778.699804   15744 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1775825778.709679   15750 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+INFO:root:HMI MJPEG preview available at http://0.0.0.0:8080/
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+^CTraceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2755, in <module>
+    raise SystemExit(main())
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2347, in main
+    if action_client.try_connect():
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1488, in try_connect
+    self.connect()
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1480, in connect
+    self._socket = socket.create_connection((self._ip, self._port))
+  File "/usr/lib/python3.9/socket.py", line 831, in create_connection
+    sock.connect(sa)
+KeyboardInterrupt
+
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ /home/mdj/RoboChessZED/venv/bin/python /home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py
+[2026-04-10 14:57:15 UTC][ZED][INFO] Logging level INFO
+[2026-04-10 14:57:17 UTC][ZED][INFO] [Init]  Camera successfully opened.
+[2026-04-10 14:57:17 UTC][ZED][INFO] [Init]  Camera FW version: 1523
+[2026-04-10 14:57:17 UTC][ZED][INFO] [Init]  Video mode: HD1080@30
+[2026-04-10 14:57:17 UTC][ZED][INFO] [Init]  Serial Number: S/N 26879675
+[2026-04-10 14:57:17 UTC][ZED][INFO] [Init]  Depth mode: NEURAL
+INFO:root:MJPEG preview crop loaded from /home/mdj/RoboChessZED/zed_chess_vision/sqdict.json
+Error in cpuinfo: prctl(PR_SVE_GET_VL) failed
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1775825839.405066   16801 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1775825839.417732   16809 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+INFO:root:HMI MJPEG preview available at http://0.0.0.0:8080/
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+^C^CTraceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2347, in main
+    if action_client.try_connect():
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1488, in try_connect
+    self.connect()
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1480, in connect
+    self._socket = socket.create_connection((self._ip, self._port))
+  File "/usr/lib/python3.9/socket.py", line 831, in create_connection
+    sock.connect(sa)
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2755, in <module>
+    raise SystemExit(main())
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2746, in main
+    preview_server.stop()
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 252, in stop
+    self._server.shutdown()
+  File "/usr/lib/python3.9/socketserver.py", line 252, in shutdown
+    self.__is_shut_down.wait()
+  File "/usr/lib/python3.9/threading.py", line 574, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.9/threading.py", line 312, in wait
+    waiter.acquire()
+KeyboardInterrupt
+^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ ^C
+(venv) mdj@ubuntu:~/RoboChessZED$ /home/mdj/RoboChessZED/venv/bin/python /home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py
+[2026-04-10 14:59:09 UTC][ZED][INFO] Logging level INFO
+^T[2026-04-10 14:59:10 UTC][ZED][INFO] [Init]  Camera successfully opened.
+[2026-04-10 14:59:10 UTC][ZED][INFO] [Init]  Camera FW version: 1523
+[2026-04-10 14:59:10 UTC][ZED][INFO] [Init]  Video mode: HD1080@30
+[2026-04-10 14:59:10 UTC][ZED][INFO] [Init]  Serial Number: S/N 26879675
+[2026-04-10 14:59:10 UTC][ZED][INFO] [Init]  Depth mode: NEURAL
+INFO:root:MJPEG preview crop loaded from /home/mdj/RoboChessZED/zed_chess_vision/sqdict.json
+Error in cpuinfo: prctl(PR_SVE_GET_VL) failed
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1775825952.750665   18118 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1775825952.760431   18126 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+INFO:root:HMI MJPEG preview available at http://0.0.0.0:8080/
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+WARNING:root:Vision server not available, retrying...
+WARNING:root:Vision action server not available, retrying...
+^C^CTraceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2341, in main
+    if client.try_connect():
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1488, in try_connect
+    self.connect()
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1480, in connect
+    self._socket = socket.create_connection((self._ip, self._port))
+  File "/usr/lib/python3.9/socket.py", line 831, in create_connection
+    sock.connect(sa)
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2755, in <module>
+    raise SystemExit(main())
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2746, in main
+    preview_server.stop()
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 252, in stop
+    self._server.shutdown()
+  File "/usr/lib/python3.9/socketserver.py", line 252, in shutdown
+    self.__is_shut_down.wait()
+  File "/usr/lib/python3.9/threading.py", line 574, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.9/threading.py", line 312, in wait
+    waiter.acquire()
+KeyboardInterrupt
+^C^C
+(venv) mdj@ubuntu:~/RoboChessZED$ /home/mdj/RoboChessZED/venv/bin/python /home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py
+[2026-04-10 15:00:59 UTC][ZED][INFO] Logging level INFO
+[2026-04-10 15:01:01 UTC][ZED][INFO] [Init]  Camera successfully opened.
+[2026-04-10 15:01:01 UTC][ZED][INFO] [Init]  Camera FW version: 1523
+[2026-04-10 15:01:01 UTC][ZED][INFO] [Init]  Video mode: HD1080@30
+[2026-04-10 15:01:01 UTC][ZED][INFO] [Init]  Serial Number: S/N 26879675
+[2026-04-10 15:01:01 UTC][ZED][INFO] [Init]  Depth mode: NEURAL
+INFO:root:MJPEG preview crop loaded from /home/mdj/RoboChessZED/zed_chess_vision/sqdict.json
+Error in cpuinfo: prctl(PR_SVE_GET_VL) failed
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1775826063.652303   19887 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1775826063.686899   19887 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+INFO:root:HMI MJPEG preview available at http://0.0.0.0:8080/
+INFO:root:Vision server connected.
+INFO:root:Vision action server connected.
+INFO:root:Vision mode synced: ROBOT
+INFO:root:Gesture control disabled.
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Control response: OK status=WAITING_HUMAN mode=ROBOT prepared=-
+INFO:root:Vision mode synced: ASSISTED
+INFO:root:Vision mode synced: EXHIBITION
+INFO:root:Vision mode synced: CAMERA
+INFO:root:Control response: OK status=WAITING_HUMAN mode=CAMERA prepared=-
+Traceback (most recent call last):
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2755, in <module>
+    raise SystemExit(main())
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 2354, in main
+    response = client.send_line("PING")
+  File "/home/mdj/RoboChessZED/zed_chess_vision/chess_tracker_zed2.py", line 1500, in send_line
+    self._socket.sendall(payload)
+BrokenPipeError: [Errno 32] Broken pipe
